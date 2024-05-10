@@ -6,4 +6,4 @@ EXCHANGE_NAME = 'hello'
 
 # Queues
 QUEUE_NAME = 'hello'
-PREFETCH_COUNT = 5
+PREFETCH_COUNT = 4
