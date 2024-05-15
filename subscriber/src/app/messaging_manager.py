@@ -44,7 +44,7 @@ def start_consuming(queue_name, rabbitmq_host, rabbitmq_port):
                 channel.basic_ack(method.delivery_tag)
                 if time.time() - consuming_time > 9:
                     prefetch_count += evaluate_new_prefetch_count(
-                        current_prefetch=prefetch_count, arrival_rate=count_messages / 10)
+                        current_prefetch=prefetch_count, arrival_rate_value=count_messages / 10)
                     # if (sample_id != 1) and (sample_id % 10 == 1):
                     #     new_prefetch_count = prefetch_count + 3
                     #     channel.basic_qos(prefetch_count=new_prefetch_count)
@@ -64,8 +64,6 @@ def start_consuming(queue_name, rabbitmq_host, rabbitmq_port):
                     consuming_time = 0
                     count_messages = 0
                     latency_sum = 0
-                    if new_prefetch_count:
-                        prefetch_count = new_prefetch_count
         except pika.exceptions.ChannelClosedByBroker:
             print("Channel was closed by broker. Continuing to next iteration.")
             break

@@ -1,64 +1,65 @@
+import math
+from utils.core_functions import logging_pc_changes
 import sys
+import numpy as np
 import skfuzzy as fuzz
+from skfuzzy import control as ctrl
 
 sys.path.append('/home/matheus/Documentos/GIT/FuzzyLogicExp/subscriber/src')
-from core_functions import logging_pc_changes
 
-setpoint = 2000
+setpoint = 500
+sample_saves = 0
 
-"""
-This section defines the fuzzy sets to error. 
-The error is compute using the difference between the setpoint and the current arrival rate.
-"""
-# Define fuzzy sets for arrival rate (low, medium, high)
-err_low = fuzz.trimf("Error_Low", -1000, -500, 0)
-err_med = fuzz.trimf("Error_Medium", -500, 0, 500)
-err_high = fuzz.trimf("Error_High", 0, 500, 1000)
+# Define the fuzzy variables and membership functions
+arrival_rate = ctrl.Antecedent(np.arange(0, 2001, 1), 'arrival_rate')
+pc = ctrl.Antecedent(np.arange(1, 21, 1), 'pc')
+pca = ctrl.Consequent(np.arange(-10, 11, 1), 'pca')
 
-# Define fuzzy sets for prefetch count (low, medium, high)
-pc_low = fuzz.trimf("PC_Low", 1, 2, 3)
-pc_med = fuzz.trimf("PC_Medium", 5, 8, 11)
-pc_high = fuzz.trimf("PC_High", 13, 15, 19)
+arrival_rate['low'] = fuzz.trimf(arrival_rate.universe, [0, 250, 1000])
+arrival_rate['medium'] = fuzz.trimf(arrival_rate.universe, [750, 1750, 2750])
+arrival_rate['high'] = fuzz.trimf(arrival_rate.universe, [2250, 3100, 3100])
 
-# Define fuzzy sets for PCA (prefetch count adjustment)
-pca_low_decrease = fuzz.trimf("PCA_Low_Decrease", -5, -3, -1)
-pca_no_change = fuzz.trimf("PCA_No_Change", -2, 0, 2)
-pca_low_increase = fuzz.trimf("PCA_Low_Increase", 1, 3, 5)
-pca_high_increase = fuzz.trimf("PCA_High_Increase", 4, 6, 8)
-pca_high_decrease = fuzz.trimf("PCA_High_Decrease", -8, -6, -4)
+pc['low'] = fuzz.trimf(pc.universe, [0, 2, 8])
+pc['medium'] = fuzz.trimf(pc.universe, [5, 10, 15])
+pc['high'] = fuzz.trimf(pc.universe, [12, 18, 20])
 
-# Define fuzzy rules
-rule1 = fuzz.rule([err_low, pc_low], pca_high_increase)
-rule2 = fuzz.rule([err_low, pc_med], pca_low_increase)
-rule3 = fuzz.rule([err_low, pc_high], pca_no_change)
-rule4 = fuzz.rule([err_med, pc_low], pca_high_increase)
-rule5 = fuzz.rule([err_med, pc_med], pca_no_change)
-rule6 = fuzz.rule([err_med, pc_high], pca_low_decrease)
-rule7 = fuzz.rule([err_high, pc_low], pca_high_decrease)
-rule8 = fuzz.rule([err_high, pc_med], pca_high_decrease)
-rule9 = fuzz.rule([err_high, pc_high], pca_low_increase)
+# Define the membership functions for prefetch count adjustment (pca)
+pca['low'] = fuzz.trimf(pca.universe, [-10, -5, 0])
+pca['medium'] = fuzz.trimf(pca.universe, [-5, 0, 5])
+pca['high'] = fuzz.trimf(pca.universe, [0, 5, 10])
 
-# Control system
-rule_aggregate = fuzz.ruleblock(
+# Define the fuzzy rules
+rule1 = ctrl.Rule(arrival_rate['low'] & pc['low'], pca['high'])
+rule2 = ctrl.Rule(arrival_rate['low'] & pc['medium'], pca['medium'])
+rule3 = ctrl.Rule(arrival_rate['low'] & pc['high'], pca['low'])
+rule4 = ctrl.Rule(arrival_rate['medium'] & pc['low'], pca['high'])
+rule5 = ctrl.Rule(arrival_rate['medium'] & pc['medium'], pca['medium'])
+rule6 = ctrl.Rule(arrival_rate['medium'] & pc['high'], pca['low'])
+rule7 = ctrl.Rule(arrival_rate['high'] & pc['low'], pca['high'])
+rule8 = ctrl.Rule(arrival_rate['high'] & pc['medium'], pca['high'])
+rule9 = ctrl.Rule(arrival_rate['high'] & pc['high'], pca['low'])
+
+# Create the fuzzy system
+control_system = ctrl.ControlSystem(
     [rule1, rule2, rule3, rule4, rule5, rule6, rule7, rule8, rule9])
-inference = fuzz.ControlSystem([rule_aggregate])
-output = fuzz.FuzzyOutput()
+controller = ctrl.ControlSystemSimulation(control_system)
 
-def evaluate_new_prefetch_count(current_prefetch, arrival_rate):
-    error = setpoint - arrival_rate
-    # Fuzzify inputs
-    pc_level = fuzz.interp_membership(fuzz.linguistic_test(
-        "PC", current_prefetch), pc_low, pc_med, pc_high)
-    err_level = fuzz.interp_membership(fuzz.linguistic_test(
-        "Error", error), err_low, err_med, err_high)
 
-    # Evaluate the control system
-    output["PCA"] = fuzz.inference(inference, {"PC": pc_level, "Error": err_level})
+def evaluate_new_prefetch_count(current_prefetch, arrival_rate_value):
+    # Set input values to the controller
+    controller.input['arrival_rate'] = arrival_rate_value
+    controller.input['pc'] = current_prefetch
 
-    # Defuzzify the output (convert to crisp value)
-    pca_adjustment = fuzz.defuzzify(output["PCA"], method="centroid")
+    # Compute the output
+    controller.compute()
+
+    # Get the output (pca_adjustment)
+    pca_adjustment = controller.output['pca']
 
     # Save logs to file
-    logging_pc_changes(arrival_rate, current_prefetch, current_prefetch + pca_adjustment)
-
-    return pca_adjustment
+    logging_pc_changes(arrival_rate_value, current_prefetch,
+                       math.ceil(current_prefetch + pca_adjustment))
+    sample_saves += 1
+    if sample_saves != 1 and sample_saves % 10 == 0:
+        setpoint += 250 # Increase the setpoint by 250 messages per second
+    return math.ceil(pca_adjustment)
