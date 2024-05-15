@@ -6,4 +6,7 @@ EXCHANGE_NAME = 'hello'
 
 # Queues
 QUEUE_NAME = 'hello'
-PREFETCH_COUNT = 4
+PREFETCH_COUNT = 1
+
+# Setpoints
+ARRIVAL_RATE_SETPOINT = 2000

@@ -1,5 +1,13 @@
 import csv
 
+def logging_pc_changes(arrival_rate, prefetch_count, new_prefetch_count):
+    data = f"Arrival rate: {arrival_rate}, Current PC: {prefetch_count}, Updated PC: {new_prefetch_count}"
+    try:
+        with open('pc_changes.log', 'a') as logfile:
+            logfile.write(data + '\n')
+    except Exception as e:
+        print(f"Error logging PC changes: {e}")
+
 def save_data_to_csv(prefetch_count, average_latency, arrival_rate, sample_number):
     data = [prefetch_count, average_latency, arrival_rate, sample_number]
     try:
