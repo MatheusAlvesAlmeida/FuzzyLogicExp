@@ -11,10 +11,11 @@ from shared.shared import (
     QUEUE_NAME,
     PREFETCH_COUNT
 )
-from controllers.fuzzy_controller import evaluate_new_prefetch_count
+from controllers.fuzzy_controller import FuzzyController
 
 
 def start_consuming(queue_name, rabbitmq_host, rabbitmq_port):
+    fuzzy_controller = FuzzyController()
     consuming_time = 0
     count_messages = 0
     latency_sum = 0
@@ -43,7 +44,7 @@ def start_consuming(queue_name, rabbitmq_host, rabbitmq_port):
                     publish_time=received_message["timestamp"], received_time=received_time)
                 channel.basic_ack(method.delivery_tag)
                 if time.time() - consuming_time > 9:
-                    prefetch_count += evaluate_new_prefetch_count(
+                    prefetch_count += fuzzy_controller.evaluate_new_prefetch_count(
                         current_prefetch=prefetch_count, arrival_rate_value=count_messages / 10)
                     # if (sample_id != 1) and (sample_id % 10 == 1):
                     #     new_prefetch_count = prefetch_count + 3

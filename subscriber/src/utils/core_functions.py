@@ -1,7 +1,7 @@
 import csv
 
-def logging_pc_changes(arrival_rate, prefetch_count, new_prefetch_count):
-    data = [arrival_rate, prefetch_count, new_prefetch_count]
+def logging_pc_changes(setpoint, error_value, prefetch_count, new_prefetch_count):
+    data = [setpoint, error_value, prefetch_count, new_prefetch_count]
     try:
         with open('pc_changes.csv', 'a', newline='') as csvfile:
             writer = csv.writer(csvfile)
