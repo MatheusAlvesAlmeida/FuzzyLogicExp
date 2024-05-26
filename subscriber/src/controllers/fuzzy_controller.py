@@ -9,7 +9,7 @@ sys.path.append('/home/matheus/Documentos/GIT/FuzzyLogicExp/subscriber/src')
 
 
 class FuzzyController:
-    def __init__(self, setpoint=1000):
+    def __init__(self, setpoint=5000):
         self.setpoint = setpoint  # Define setpoint as an attribute
         self.sample_saves = 0
         """
@@ -20,13 +20,13 @@ class FuzzyController:
         self.pca = ctrl.Consequent(np.arange(-10, 11, 1), 'pca')
 
         # Define the membership functions for error
-        self.error['negative_large'] = fuzz.trimf(self.error.universe, [-10000, -7000, -5000])
-        self.error['negative_medium'] = fuzz.trimf(self.error.universe, [-5000, -2500, -1000])
-        self.error['negative_small'] = fuzz.trimf(self.error.universe, [-1000, -500, -250])
-        self.error['zero'] = fuzz.trimf(self.error.universe, [-250, 0, 250])
-        self.error['positive_small'] = fuzz.trimf(self.error.universe, [0, 250, 500])
-        self.error['positive_medium'] = fuzz.trimf(self.error.universe, [500, 1000, 2500])
-        self.error['positive_large'] = fuzz.trimf(self.error.universe, [2500, 5000, 10000])
+        self.error['negative_large'] = fuzz.trimf(self.error.universe, [-10001, -7000, -5000])
+        self.error['negative_medium'] = fuzz.trimf(self.error.universe, [-4999, -2500, -1000])
+        self.error['negative_small'] = fuzz.trimf(self.error.universe, [-999, -500, -250])
+        self.error['zero'] = fuzz.trimf(self.error.universe, [-249, 0, 250])
+        self.error['positive_small'] = fuzz.trimf(self.error.universe, [249, 500, 1000])
+        self.error['positive_medium'] = fuzz.trimf(self.error.universe, [1001, 2500, 5000])
+        self.error['positive_large'] = fuzz.trimf(self.error.universe, [5001, 7000, 10000])
 
         # Define the membership functions for prefetch count adjustment (pca)
         self.pca['higher_decrease'] = fuzz.trimf(self.pca.universe, [-10, -7, -5])
@@ -45,7 +45,7 @@ class FuzzyController:
 
         # Create the fuzzy system
         self.control_system = ctrl.ControlSystem(
-            [self.rule1, self.rule2, self.rule3, self.rule4, self.rule5])
+            [self.rule1, self.rule2, self.rule3, self.rule4, self.rule5, self.rule6])
         self.controller = ctrl.ControlSystemSimulation(self.control_system)
 
     def evaluate_new_prefetch_count(self, current_prefetch, arrival_rate_value):
@@ -60,8 +60,10 @@ class FuzzyController:
         pca_adjustment = self.controller.output['pca']
 
         # Save logs to file
-        logging_pc_changes(self.setpoint, error_value, current_prefetch,
-                           math.ceil(current_prefetch + pca_adjustment))
+        new_prefetch_count = math.ceil(current_prefetch + pca_adjustment)
+        if new_prefetch_count < 1:
+            new_prefetch_count = 1
+        logging_pc_changes(self.setpoint, arrival_rate_value, error_value, current_prefetch, new_prefetch_count)
 
         self.sample_saves += 1
         if self.sample_saves != 1 and self.sample_saves % 10 == 0:

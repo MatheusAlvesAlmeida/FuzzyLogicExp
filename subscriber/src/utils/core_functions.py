@@ -1,12 +1,12 @@
 import csv
 
-def logging_pc_changes(setpoint, error_value, prefetch_count, new_prefetch_count):
-    data = [setpoint, error_value, prefetch_count, new_prefetch_count]
+def logging_pc_changes(setpoint, arrival_rate, error_value, prefetch_count, new_prefetch_count):
+    data = [setpoint, arrival_rate, error_value, prefetch_count, new_prefetch_count]
     try:
         with open('pc_changes.csv', 'a', newline='') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(data)
-        print(f"Prefetch count changed from {prefetch_count} to {new_prefetch_count} based on error value {error_value}.")
+        print(f"Prefetch count changed from {prefetch_count} to {new_prefetch_count} based on error value {error_value}. The setpoint is {setpoint}")
     except Exception as e:
         print(f"Error logging PC changes: {e}")
 

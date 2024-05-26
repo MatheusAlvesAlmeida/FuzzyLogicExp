@@ -46,9 +46,8 @@ def start_consuming(queue_name, rabbitmq_host, rabbitmq_port):
                 if time.time() - consuming_time > 9:
                     prefetch_count += fuzzy_controller.evaluate_new_prefetch_count(
                         current_prefetch=prefetch_count, arrival_rate_value=count_messages / 10)
-                    # if (sample_id != 1) and (sample_id % 10 == 1):
-                    #     new_prefetch_count = prefetch_count + 3
-                    #     channel.basic_qos(prefetch_count=new_prefetch_count)
+                    if prefetch_count < 1:
+                        prefetch_count = 1
                     channel.basic_qos(prefetch_count=prefetch_count)
                     channel.cancel()
                     print("Consumer stopped to save metrics.")
