@@ -9,36 +9,39 @@ sys.path.append('/home/matheus/Documentos/GIT/FuzzyLogicExp/subscriber/src')
 
 
 class FuzzyController:
-    def __init__(self, setpoint=500):
+    def __init__(self, setpoint=1000):
         self.setpoint = setpoint  # Define setpoint as an attribute
         self.sample_saves = 0
-        # Define the fuzzy variables and membership functions
-        self.error = ctrl.Antecedent(np.arange(-1000, 1001, 1), 'error')
+        """
+        Define the fuzzy variables and membership functions.
+        The error is the input variable, and the prefetch count adjustment (pca) is the output variable.
+        """
+        self.error = ctrl.Antecedent(np.arange(-10000, 10001, 1), 'error')
         self.pca = ctrl.Consequent(np.arange(-10, 11, 1), 'pca')
 
         # Define the membership functions for error
-        self.error['negative_large'] = fuzz.trimf(
-            self.error.universe, [-1000, -500, -250])
-        self.error['negative_small'] = fuzz.trimf(
-            self.error.universe, [-500, -250, 0])
+        self.error['negative_large'] = fuzz.trimf(self.error.universe, [-10000, -7000, -5000])
+        self.error['negative_medium'] = fuzz.trimf(self.error.universe, [-5000, -2500, -1000])
+        self.error['negative_small'] = fuzz.trimf(self.error.universe, [-1000, -500, -250])
         self.error['zero'] = fuzz.trimf(self.error.universe, [-250, 0, 250])
-        self.error['positive_small'] = fuzz.trimf(
-            self.error.universe, [0, 250, 500])
-        self.error['positive_large'] = fuzz.trimf(
-            self.error.universe, [500, 1000, 1000])
+        self.error['positive_small'] = fuzz.trimf(self.error.universe, [0, 250, 500])
+        self.error['positive_medium'] = fuzz.trimf(self.error.universe, [500, 1000, 2500])
+        self.error['positive_large'] = fuzz.trimf(self.error.universe, [2500, 5000, 10000])
 
         # Define the membership functions for prefetch count adjustment (pca)
-        self.pca['low'] = fuzz.trimf(self.pca.universe, [-10, -5, 0])
-        self.pca['medium'] = fuzz.trimf(self.pca.universe, [-5, 0, 5])
-        self.pca['high'] = fuzz.trimf(self.pca.universe, [0, 5, 10])
+        self.pca['higher_decrease'] = fuzz.trimf(self.pca.universe, [-10, -7, -5])
+        self.pca['small_decrease'] = fuzz.trimf(self.pca.universe, [-3, -2, -1])
+        self.pca['zero'] = fuzz.trimf(self.pca.universe, [-1, 0, 1])
+        self.pca['small_increase'] = fuzz.trimf(self.pca.universe, [1, 2, 3])
+        self.pca['higher_increase'] = fuzz.trimf(self.pca.universe, [5, 7, 10])
 
         # Define the fuzzy rules based on error
-        self.rule1 = ctrl.Rule(self.error['negative_large'], self.pca['high'])
-        self.rule2 = ctrl.Rule(
-            self.error['negative_small'], self.pca['medium'])
-        self.rule3 = ctrl.Rule(self.error['zero'], self.pca['low'])
-        self.rule4 = ctrl.Rule(self.error['positive_small'], self.pca['low'])
-        self.rule5 = ctrl.Rule(self.error['positive_large'], self.pca['high'])
+        self.rule1 = ctrl.Rule(self.error['negative_large'], self.pca['higher_decrease'])
+        self.rule2 = ctrl.Rule(self.error['negative_medium'], self.pca['small_decrease'])  
+        self.rule3 = ctrl.Rule(self.error['zero'], self.pca['zero'])
+        self.rule4 = ctrl.Rule(self.error['positive_small'], self.pca['zero'])
+        self.rule5 = ctrl.Rule(self.error['positive_medium'], self.pca['small_increase'])  
+        self.rule6 = ctrl.Rule(self.error['positive_large'], self.pca['higher_increase'])
 
         # Create the fuzzy system
         self.control_system = ctrl.ControlSystem(
@@ -46,7 +49,11 @@ class FuzzyController:
         self.controller = ctrl.ControlSystemSimulation(self.control_system)
 
     def evaluate_new_prefetch_count(self, current_prefetch, arrival_rate_value):
-        # Calculate error as the difference between setpoint and arrival rate
+        """
+        The error is the difference between the setpoint and the current value of the arrival rate.
+        - If the error is positive, it means that the arrival rate is lower than the setpoint, and PC must be increased.
+        - Otherwise, the error negative means that the arrival rate is higher than the setpoint, and PC must be decreased.
+        """
         error_value = round(self.setpoint - arrival_rate_value)
         self.controller.input['error'] = error_value
         self.controller.compute()

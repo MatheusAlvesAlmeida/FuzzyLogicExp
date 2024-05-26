@@ -38,7 +38,7 @@ def start_consuming(queue_name, rabbitmq_host, rabbitmq_port):
                 # Process the message
                 received_time = time.time()
                 received_message = json.loads(body.decode())
-                print(f"Received message: {received_message}")
+                #print(f"Received message: {received_message}")
                 count_messages += 1
                 latency_sum += calculate_latency(
                     publish_time=received_message["timestamp"], received_time=received_time)
@@ -58,6 +58,12 @@ def start_consuming(queue_name, rabbitmq_host, rabbitmq_port):
                         arrival_rate=count_messages / 10,
                         sample_number=sample_id
                     )
+                    print(f"""
+                        Sample {sample_id}:
+                        Prefetch count: {prefetch_count}
+                        Average latency: {latency_sum / count_messages}
+                        Arrival rate: {count_messages / 10}
+                    """)
                     sample_id += 1
                     if sample_id == 70:
                         print("Finished consuming messages.")
