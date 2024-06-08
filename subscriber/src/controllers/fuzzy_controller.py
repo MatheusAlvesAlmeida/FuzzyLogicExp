@@ -16,7 +16,7 @@ class FuzzyController:
         Define the fuzzy variables and membership functions.
         The error is the input variable, and the prefetch count adjustment (pca) is the output variable.
         """
-        self.error = ctrl.Antecedent(np.arange(-10000, 10001, 1), 'error')
+        self.error = ctrl.Antecedent(np.arange(-100000, 100001, 1), 'error')
         self.pca = ctrl.Consequent(np.arange(-10, 11, 1), 'pca')
 
         # Define the membership functions for error
@@ -38,8 +38,9 @@ class FuzzyController:
         # Define the fuzzy rules based on error
         self.rule1 = ctrl.Rule(self.error['negative_large'], self.pca['higher_decrease'])
         self.rule2 = ctrl.Rule(self.error['negative_medium'], self.pca['small_decrease'])  
+        self.rule3 = ctrl.Rule(self.error['negative_small'], self.pca['small_decrease'])
         self.rule3 = ctrl.Rule(self.error['zero'], self.pca['zero'])
-        self.rule4 = ctrl.Rule(self.error['positive_small'], self.pca['zero'])
+        self.rule4 = ctrl.Rule(self.error['positive_small'], self.pca['small_increase'])
         self.rule5 = ctrl.Rule(self.error['positive_medium'], self.pca['small_increase'])  
         self.rule6 = ctrl.Rule(self.error['positive_large'], self.pca['higher_increase'])
 
@@ -55,6 +56,7 @@ class FuzzyController:
         - Otherwise, the error negative means that the arrival rate is higher than the setpoint, and PC must be decreased.
         """
         error_value = round(self.setpoint - arrival_rate_value)
+        print(f"Error: {error_value}")
         self.controller.input['error'] = error_value
         self.controller.compute()
         pca_adjustment = self.controller.output['pca']

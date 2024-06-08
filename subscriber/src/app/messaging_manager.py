@@ -43,29 +43,28 @@ def start_consuming(queue_name, rabbitmq_host, rabbitmq_port):
                 latency_sum += calculate_latency(
                     publish_time=received_message["timestamp"], received_time=received_time)
                 channel.basic_ack(method.delivery_tag)
-                if time.time() - consuming_time > 9:
-                    prefetch_count += fuzzy_controller.evaluate_new_prefetch_count(
-                        current_prefetch=prefetch_count, arrival_rate_value=count_messages / 10)
-                    if prefetch_count < 1:
-                        prefetch_count = 1
-                    channel.basic_qos(prefetch_count=prefetch_count)
+                time_passed = time.time() - consuming_time
+                if time_passed >= 5:
                     channel.cancel()
                     print("Consumer stopped to save metrics.")
                     save_data_to_csv(
                         prefetch_count=prefetch_count,
-                        average_latency=latency_sum / count_messages,
-                        arrival_rate=count_messages / 10,
+                        #average_latency=latency_sum / count_messages,
+                        arrival_rate=count_messages / time_passed,
                         sample_number=sample_id
                     )
                     print(f"""
                         Sample {sample_id}:
                         Prefetch count: {prefetch_count}
                         Average latency: {latency_sum / count_messages}
-                        Arrival rate: {count_messages / 10}
+                        Arrival rate: {count_messages / time_passed}
                     """)
                     sample_id += 1
-                    if sample_id == 70:
-                        print("Finished consuming messages.")
+                    if sample_id % 30 == 0:
+                        prefetch_count = prefetch_count + 1
+                        channel.basic_qos(prefetch_count=prefetch_count)
+                    if sample_id == 450:
+                        continue_consuming = False
                         sys.exit(0)
                     consuming_time = 0
                     count_messages = 0
