@@ -10,8 +10,8 @@ def logging_pc_changes(setpoint, arrival_rate, error_value, prefetch_count, new_
     except Exception as e:
         print(f"Error logging PC changes: {e}")
 
-def save_data_to_csv(prefetch_count, arrival_rate, sample_number):
-    data = [prefetch_count, arrival_rate, sample_number]
+def save_data_to_csv(prefetch_count, arrival_rate, sample_number, setpoint):
+    data = [prefetch_count, arrival_rate, sample_number, setpoint]
     try:
         with open('results.csv', 'a', newline='') as csvfile:
             writer = csv.writer(csvfile)

@@ -20,21 +20,30 @@ class FuzzyController:
         self.pca = ctrl.Consequent(np.arange(-10, 11, 1), 'pca')
 
         # Define the membership functions for error
-        self.error['negative_large'] = fuzz.trimf(self.error.universe, [-10001, -7000, -5000])
-        self.error['negative_medium'] = fuzz.trimf(self.error.universe, [-4999, -2500, -1000])
-        self.error['negative_small'] = fuzz.trimf(self.error.universe, [-999, -500, -250])
+        self.error['negative_large'] = fuzz.trimf(
+            self.error.universe, [-100000, -7000, -5000])
+        self.error['negative_medium'] = fuzz.trimf(
+            self.error.universe, [-4999, -2500, -1000])
+        self.error['negative_small'] = fuzz.trimf(
+            self.error.universe, [-999, -500, -250])
         self.error['zero'] = fuzz.trimf(self.error.universe, [-249, 0, 250])
-        self.error['positive_small'] = fuzz.trimf(self.error.universe, [249, 500, 1000])
-        self.error['positive_medium'] = fuzz.trimf(self.error.universe, [1001, 2500, 5000])
-        self.error['positive_large'] = fuzz.trimf(self.error.universe, [5001, 7000, 10000])
+        self.error['positive_small'] = fuzz.trimf(
+            self.error.universe, [249, 500, 1000])
+        self.error['positive_medium'] = fuzz.trimf(
+            self.error.universe, [1001, 2500, 5000])
+        self.error['positive_large'] = fuzz.trimf(
+            self.error.universe, [5001, 7000, 100001])
 
         # Define the membership functions for prefetch count adjustment (pca)
-        self.pca['higher_decrease'] = fuzz.trimf(self.pca.universe, [-10, -9, -8])
-        self.pca['medium_decrease'] = fuzz.trimf(self.pca.universe, [-7, -6, -5])
-        self.pca['small_decrease'] = fuzz.trimf(self.pca.universe, [-4, -3, -2])
+        self.pca['higher_decrease'] = fuzz.trimf(
+            self.pca.universe, [-10, -9, -8])
+        self.pca['medium_decrease'] = fuzz.trimf(
+            self.pca.universe, [-7, -6, -5])
+        self.pca['small_decrease'] = fuzz.trimf(
+            self.pca.universe, [-4, -3, -2])
         self.pca['zero'] = fuzz.trimf(self.pca.universe, [-1, 0, 1])
-        self.pca['small_increase'] = fuzz.trimf(self.pca.universe, [1, 2, 3])
-        self.pca['medium_increase'] = fuzz.trimf(self.pca.universe, [4, 6, 7])
+        self.pca['small_increase'] = fuzz.trimf(self.pca.universe, [2, 3, 4])
+        self.pca['medium_increase'] = fuzz.trimf(self.pca.universe, [5, 6, 7])
         self.pca['higher_increase'] = fuzz.trimf(self.pca.universe, [8, 9, 10])
 
         # Define the fuzzy rules based on error
@@ -75,8 +84,32 @@ class FuzzyController:
             new_prefetch_count = 1
         logging_pc_changes(self.setpoint, arrival_rate_value,
                            error_value, current_prefetch, new_prefetch_count)
+        
+        return math.ceil(new_prefetch_count)
 
-        self.sample_saves += 1
-        if self.sample_saves != 1 and self.sample_saves % 10 == 0:
-            self.setpoint += 250  # Increase the setpoint by 250 messages per second
-        return math.ceil(pca_adjustment)
+    def update_rules(self, rule_list):
+        """
+        Define fuzzy rules based on the given rule_list.
+        Expected format: ['IF ERROR = negative_large THEN PCA = higher_decrease', ...]
+        """
+        self.control_system = None
+        self.controller = None
+        rules = []
+        for rule in rule_list:
+            antecedent, consequent = rule.split(' THEN ')
+            error_level = antecedent.split('= ')[1].strip()
+            pca_level = consequent.split('= ')[1].strip()
+            rules.append(
+                ctrl.Rule(self.error[error_level], self.pca[pca_level]))
+
+        # Create the fuzzy control system
+        self.control_system = ctrl.ControlSystem(rules)
+        self.controller = ctrl.ControlSystemSimulation(self.control_system)
+
+    def simulate(self, error_values):
+        outputs = []
+        for error in error_values:
+            self.controller.input['error'] = error
+            self.controller.compute()
+            outputs.append(self.controller.output['pca'])
+        return outputs
