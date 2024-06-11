@@ -29,20 +29,28 @@ class FuzzyController:
         self.error['positive_large'] = fuzz.trimf(self.error.universe, [5001, 7000, 10000])
 
         # Define the membership functions for prefetch count adjustment (pca)
-        self.pca['higher_decrease'] = fuzz.trimf(self.pca.universe, [-10, -7, -5])
-        self.pca['small_decrease'] = fuzz.trimf(self.pca.universe, [-3, -2, -1])
+        self.pca['higher_decrease'] = fuzz.trimf(self.pca.universe, [-10, -9, -8])
+        self.pca['medium_decrease'] = fuzz.trimf(self.pca.universe, [-7, -6, -5])
+        self.pca['small_decrease'] = fuzz.trimf(self.pca.universe, [-4, -3, -2])
         self.pca['zero'] = fuzz.trimf(self.pca.universe, [-1, 0, 1])
         self.pca['small_increase'] = fuzz.trimf(self.pca.universe, [1, 2, 3])
-        self.pca['higher_increase'] = fuzz.trimf(self.pca.universe, [5, 7, 10])
+        self.pca['medium_increase'] = fuzz.trimf(self.pca.universe, [4, 6, 7])
+        self.pca['higher_increase'] = fuzz.trimf(self.pca.universe, [8, 9, 10])
 
         # Define the fuzzy rules based on error
-        self.rule1 = ctrl.Rule(self.error['negative_large'], self.pca['higher_decrease'])
-        self.rule2 = ctrl.Rule(self.error['negative_medium'], self.pca['small_decrease'])  
-        self.rule3 = ctrl.Rule(self.error['negative_small'], self.pca['small_decrease'])
+        self.rule1 = ctrl.Rule(
+            self.error['negative_large'], self.pca['higher_decrease'])
+        self.rule2 = ctrl.Rule(
+            self.error['negative_medium'], self.pca['small_decrease'])
+        self.rule3 = ctrl.Rule(
+            self.error['negative_small'], self.pca['small_decrease'])
         self.rule3 = ctrl.Rule(self.error['zero'], self.pca['zero'])
-        self.rule4 = ctrl.Rule(self.error['positive_small'], self.pca['small_increase'])
-        self.rule5 = ctrl.Rule(self.error['positive_medium'], self.pca['small_increase'])  
-        self.rule6 = ctrl.Rule(self.error['positive_large'], self.pca['higher_increase'])
+        self.rule4 = ctrl.Rule(
+            self.error['positive_small'], self.pca['small_increase'])
+        self.rule5 = ctrl.Rule(
+            self.error['positive_medium'], self.pca['small_increase'])
+        self.rule6 = ctrl.Rule(
+            self.error['positive_large'], self.pca['higher_increase'])
 
         # Create the fuzzy system
         self.control_system = ctrl.ControlSystem(
@@ -65,7 +73,8 @@ class FuzzyController:
         new_prefetch_count = math.ceil(current_prefetch + pca_adjustment)
         if new_prefetch_count < 1:
             new_prefetch_count = 1
-        logging_pc_changes(self.setpoint, arrival_rate_value, error_value, current_prefetch, new_prefetch_count)
+        logging_pc_changes(self.setpoint, arrival_rate_value,
+                           error_value, current_prefetch, new_prefetch_count)
 
         self.sample_saves += 1
         if self.sample_saves != 1 and self.sample_saves % 10 == 0:
