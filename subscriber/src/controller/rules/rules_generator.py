@@ -3,14 +3,10 @@ import sys
 import math
 import numpy as np
 import pandas as pd
-import skfuzzy as fuzz
-from skfuzzy import control as ctrl
 
 sys.path.append('/home/matheus/Documentos/GIT/FuzzyLogicExp/subscriber/src')
 from controller.fuzzy_controller import FuzzyController
 from controller.rules.const import INITIAL_POPULATION
-
-SETPOINT = 2000
 
 class GeneticAlgorithm:
     @staticmethod
@@ -86,24 +82,27 @@ class GeneticAlgorithm:
         df['new_arrival_rate'] = df['new_prefetch_count'].map(
             df_reference['arrival_rate'])
         # calculate rmse for the deviation
+        max_arrival_rate = df_reference['arrival_rate'].max()
+        min_arrival_rate = df_reference['arrival_rate'].min()
         df['deviation'] = df['new_arrival_rate'] - setpoint
         df['mse'] = df['deviation'] ** 2
         mse = df['mse'].mean()
-        fitness = np.sqrt(mse)
+        rmse = math.sqrt(mse)
+        nrmse = rmse / (max_arrival_rate - min_arrival_rate)
 
-        return fitness
+        return nrmse
     
-    def improve_rules(self, setpoint=3000):
+    def improve_rules(self, setpoint):
         initial_population = INITIAL_POPULATION
         df = pd.read_csv('results.csv')
-        df_reference = df.groupby('prefetch_count').mean().drop(columns=['sample_number'])
-        df['error'] = df['arrival_rate'] - SETPOINT 
+        df_reference = df.groupby('prefetch_count').mean().drop(columns=['sample_number', 'setpoint'])
+        df['error'] = df['arrival_rate'] - setpoint 
         lower_bound = df['prefetch_count'].min()
         upper_bound = df['prefetch_count'].max()
 
         best_fitness = math.inf
 
-        for generation in range(50):
+        for generation in range(200):
             # Calculate the fitness of each individual in the population
             fitness_scores = []
             for rule_set in initial_population:
@@ -115,20 +114,22 @@ class GeneticAlgorithm:
             best_rule_set = initial_population[best_index]
             best_fitness = fitness_scores[best_index]
 
-            if best_fitness < 600:
+            if best_fitness < 0.2:
                 break
 
             parent1, parent2 = self.roulette_wheel_selection(initial_population, fitness_scores)
 
             offspring1, offspring2 = self.crossover(parent1, parent2)
 
-            offspring1 = self.mutate(offspring1, 0.3)
-            offspring2 = self.mutate(offspring2, 0.3)
+            offspring1 = self.mutate(offspring1, 0.4)
+            offspring2 = self.mutate(offspring2, 0.4)
 
             # Replace the worst individual in the population with the offspring
             worst_index = np.argmax(fitness_scores)
             initial_population[worst_index] = offspring1
             worst_index = np.argmax(fitness_scores)
             initial_population[worst_index] = offspring2
+
+            print(f"Generation {generation}: Best fitness = {best_fitness}")
 
         return best_rule_set

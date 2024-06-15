@@ -1,5 +1,6 @@
 from controller.rules.rules_generator import GeneticAlgorithm
 from controller.fuzzy_controller import FuzzyController
+from controller.hpa_controller import HPA
 from shared.shared import (
     PREFETCH_COUNT
 )
@@ -12,13 +13,14 @@ import concurrent.futures
 
 sys.path.append('/home/matheus/Documentos/GIT/FuzzyLogicExp/subscriber/src')
 
-SETPOINT = 3000
+SETPOINT = 4500
 
 def run_genetic_algorithm(fuzzy_controller: FuzzyController):
     ga = GeneticAlgorithm()
     best_rule_set = ga.improve_rules(setpoint=SETPOINT)
     fuzzy_controller.update_rules(best_rule_set)
     print("Updated Fuzzy Controller with new rules.")
+    print(f"New rules: {best_rule_set}")
     time.sleep(2)
     return best_rule_set
 
@@ -29,10 +31,15 @@ def update_fuzzy_controller_parallel(fuzzy_controller: FuzzyController):
 
 
 def start_consuming(queue_name, rabbitmq_host, rabbitmq_port):
-    fuzzy_controller = FuzzyController(setpoint=SETPOINT)
+    #controller = HPA(setpoint=SETPOINT, max_value=10, min_value=1)
+    controller = FuzzyController(setpoint=SETPOINT)
     consuming_time = 0
     count_messages = 0
     sample_id = 1
+
+    print(f"Starting genetic algorithm to improve rules for setpoint {SETPOINT}...")
+    update_fuzzy_controller_parallel(controller)
+
     connection = pika.BlockingConnection(
         pika.ConnectionParameters(host=rabbitmq_host, port=rabbitmq_port)
     )
@@ -45,7 +52,6 @@ def start_consuming(queue_name, rabbitmq_host, rabbitmq_port):
     continue_consuming = True
     while continue_consuming:
         try:
-            update_fuzzy_controller_parallel(fuzzy_controller)
             for method, properties, body in channel.consume(queue=queue_name, inactivity_timeout=1):
                 if consuming_time == 0:
                     consuming_time = time.time()
@@ -56,7 +62,7 @@ def start_consuming(queue_name, rabbitmq_host, rabbitmq_port):
 
                     channel.basic_ack(method.delivery_tag)
                     time_passed = time.time() - consuming_time
-                    if time_passed >= 5:
+                    if time_passed >= 10:
                         channel.cancel()
                         print("Consumer stopped to save metrics.")
                         save_data_to_csv(
@@ -73,9 +79,10 @@ def start_consuming(queue_name, rabbitmq_host, rabbitmq_port):
                         """)
                         sample_id += 1
                         # Evaluate new prefetch count
-                        new_prefetch_count = fuzzy_controller.evaluate_new_prefetch_count(prefetch_count, count_messages / time_passed)
+                        new_prefetch_count = controller.evaluate_new_prefetch_count(prefetch_count, count_messages / time_passed)
+                        #new_prefetch_count = prefetch_count + 1
                         channel.basic_qos(prefetch_count=new_prefetch_count)
-                        if sample_id == 450:
+                        if sample_id == 45:
                             continue_consuming = False
                             sys.exit(0)
                         consuming_time = 0

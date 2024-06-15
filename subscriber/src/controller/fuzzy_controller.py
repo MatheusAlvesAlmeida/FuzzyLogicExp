@@ -20,46 +20,31 @@ class FuzzyController:
         self.pca = ctrl.Consequent(np.arange(-10, 11, 1), 'pca')
 
         # Define the membership functions for error
-        self.error['negative_large'] = fuzz.trimf(
-            self.error.universe, [-100000, -7000, -5000])
-        self.error['negative_medium'] = fuzz.trimf(
-            self.error.universe, [-4999, -2500, -1000])
-        self.error['negative_small'] = fuzz.trimf(
-            self.error.universe, [-999, -500, -250])
-        self.error['zero'] = fuzz.trimf(self.error.universe, [-249, 0, 250])
-        self.error['positive_small'] = fuzz.trimf(
-            self.error.universe, [249, 500, 1000])
-        self.error['positive_medium'] = fuzz.trimf(
-            self.error.universe, [1001, 2500, 5000])
-        self.error['positive_large'] = fuzz.trimf(
-            self.error.universe, [5001, 7000, 100001])
+        self.error['negative_large'] = fuzz.trimf(self.error.universe, [-100000, -5000, -1500])
+        self.error['negative_medium'] = fuzz.trimf(self.error.universe, [-5000, -1500, -500])
+        self.error['negative_small'] = fuzz.trimf(self.error.universe, [-1500, -500, 0])
+        self.error['zero'] = fuzz.trimf(self.error.universe, [-500, 0, 500])
+        self.error['positive_small'] = fuzz.trimf(self.error.universe, [0, 500, 1500])
+        self.error['positive_medium'] = fuzz.trimf(self.error.universe, [1000, 5000, 7000])
+        self.error['positive_large'] = fuzz.trimf(self.error.universe, [5000, 7000, 100000])
 
         # Define the membership functions for prefetch count adjustment (pca)
-        self.pca['higher_decrease'] = fuzz.trimf(
-            self.pca.universe, [-10, -9, -8])
-        self.pca['medium_decrease'] = fuzz.trimf(
-            self.pca.universe, [-7, -6, -5])
-        self.pca['small_decrease'] = fuzz.trimf(
-            self.pca.universe, [-4, -3, -2])
+        self.pca['higher_decrease'] = fuzz.trimf(self.pca.universe, [-10, -9, -8])
+        self.pca['medium_decrease'] = fuzz.trimf(self.pca.universe, [-7, -6, -5])
+        self.pca['small_decrease'] = fuzz.trimf(self.pca.universe, [-4, -3, -2])
         self.pca['zero'] = fuzz.trimf(self.pca.universe, [-1, 0, 1])
         self.pca['small_increase'] = fuzz.trimf(self.pca.universe, [2, 3, 4])
         self.pca['medium_increase'] = fuzz.trimf(self.pca.universe, [5, 6, 7])
         self.pca['higher_increase'] = fuzz.trimf(self.pca.universe, [8, 9, 10])
 
         # Define the fuzzy rules based on error
-        self.rule1 = ctrl.Rule(
-            self.error['negative_large'], self.pca['higher_decrease'])
-        self.rule2 = ctrl.Rule(
-            self.error['negative_medium'], self.pca['medium_decrease'])
-        self.rule3 = ctrl.Rule(
-            self.error['negative_small'], self.pca['small_decrease'])
+        self.rule1 = ctrl.Rule(self.error['negative_large'], self.pca['higher_decrease'])
+        self.rule2 = ctrl.Rule(self.error['negative_medium'], self.pca['medium_decrease'])
+        self.rule3 = ctrl.Rule(self.error['negative_small'], self.pca['small_decrease'])
         self.rule4 = ctrl.Rule(self.error['zero'], self.pca['zero'])
-        self.rule5 = ctrl.Rule(
-            self.error['positive_small'], self.pca['small_increase'])
-        self.rule6 = ctrl.Rule(
-            self.error['positive_medium'], self.pca['medium_increase'])
-        self.rule7 = ctrl.Rule(
-            self.error['positive_large'], self.pca['higher_increase'])
+        self.rule5 = ctrl.Rule(self.error['positive_small'], self.pca['small_increase'])
+        self.rule6 = ctrl.Rule(self.error['positive_medium'], self.pca['medium_increase'])
+        self.rule7 = ctrl.Rule(self.error['positive_large'], self.pca['higher_increase'])
 
         # Create the fuzzy system
         self.control_system = ctrl.ControlSystem(
@@ -74,9 +59,13 @@ class FuzzyController:
         """
         error_value = round(self.setpoint - arrival_rate_value)
         print(f"Error: {error_value}")
-        self.controller.input['error'] = error_value
-        self.controller.compute()
-        pca_adjustment = self.controller.output['pca']
+        try:
+            self.controller.input['error'] = error_value
+            self.controller.compute()
+            pca_adjustment = self.controller.output['pca']
+        except ValueError as e:
+            print(f"Failed to compute a new prefetch count for error: {error_value}")
+            pca_adjustment = 0
 
         # Save logs to file
         new_prefetch_count = math.ceil(current_prefetch + pca_adjustment)
