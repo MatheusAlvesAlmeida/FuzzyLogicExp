@@ -50,20 +50,20 @@ class FuzzyController:
         self.rule1 = ctrl.Rule(
             self.error['negative_large'], self.pca['higher_decrease'])
         self.rule2 = ctrl.Rule(
-            self.error['negative_medium'], self.pca['small_decrease'])
+            self.error['negative_medium'], self.pca['medium_decrease'])
         self.rule3 = ctrl.Rule(
             self.error['negative_small'], self.pca['small_decrease'])
-        self.rule3 = ctrl.Rule(self.error['zero'], self.pca['zero'])
-        self.rule4 = ctrl.Rule(
-            self.error['positive_small'], self.pca['small_increase'])
+        self.rule4 = ctrl.Rule(self.error['zero'], self.pca['zero'])
         self.rule5 = ctrl.Rule(
-            self.error['positive_medium'], self.pca['small_increase'])
+            self.error['positive_small'], self.pca['small_increase'])
         self.rule6 = ctrl.Rule(
+            self.error['positive_medium'], self.pca['medium_increase'])
+        self.rule7 = ctrl.Rule(
             self.error['positive_large'], self.pca['higher_increase'])
 
         # Create the fuzzy system
         self.control_system = ctrl.ControlSystem(
-            [self.rule1, self.rule2, self.rule3, self.rule4, self.rule5, self.rule6])
+            [self.rule1, self.rule2, self.rule3, self.rule4, self.rule5, self.rule6, self.rule7])
         self.controller = ctrl.ControlSystemSimulation(self.control_system)
 
     def evaluate_new_prefetch_count(self, current_prefetch, arrival_rate_value):
