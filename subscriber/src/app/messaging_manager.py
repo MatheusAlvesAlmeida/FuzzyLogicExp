@@ -12,11 +12,11 @@ import concurrent.futures
 
 sys.path.append('/home/matheus/Documentos/GIT/FuzzyLogicExp/subscriber/src')
 
-SETPOINT = 2500
+SETPOINT = 3000
 
 def run_genetic_algorithm(fuzzy_controller: FuzzyController):
     ga = GeneticAlgorithm()
-    best_rule_set = ga.improve_rules()
+    best_rule_set = ga.improve_rules(setpoint=SETPOINT)
     fuzzy_controller.update_rules(best_rule_set)
     print("Updated Fuzzy Controller with new rules.")
     time.sleep(2)
@@ -25,7 +25,7 @@ def run_genetic_algorithm(fuzzy_controller: FuzzyController):
 
 def update_fuzzy_controller_parallel(fuzzy_controller: FuzzyController):
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        future = executor.submit(run_genetic_algorithm)
+        future = executor.submit(run_genetic_algorithm, fuzzy_controller)
 
 
 def start_consuming(queue_name, rabbitmq_host, rabbitmq_port):
