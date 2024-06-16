@@ -75,7 +75,7 @@ def start_consuming(queue_name, rabbitmq_host, rabbitmq_port):
                             Sample {sample_id}:
                             Prefetch count: {prefetch_count}
                             Arrival rate: {count_messages / time_passed}
-                            Setoint: {SETPOINT}
+                            Setpoint: {SETPOINT}
                         """)
                         sample_id += 1
                         # Evaluate new prefetch count

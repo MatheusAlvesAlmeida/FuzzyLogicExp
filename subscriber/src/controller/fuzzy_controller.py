@@ -71,6 +71,8 @@ class FuzzyController:
         new_prefetch_count = math.ceil(current_prefetch + pca_adjustment)
         if new_prefetch_count < 1:
             new_prefetch_count = 1
+        if new_prefetch_count > 9:
+            new_prefetch_count = 9
         logging_pc_changes(self.setpoint, arrival_rate_value,
                            error_value, current_prefetch, new_prefetch_count)
         
