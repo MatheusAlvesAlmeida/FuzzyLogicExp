@@ -1,4 +1,4 @@
-setpoint,error_value,prefetch_count,new_prefetch_count
+setpoint,current_arrival_rate,error_value,prefetch_count,new_prefetch_count
 4500,2552.0655611727802,1948,1,7
 4500,6866.297217010196,-2366,7,9
 4500,7106.113763716085,-2606,9,9
