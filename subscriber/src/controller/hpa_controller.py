@@ -14,7 +14,7 @@ class HPA:
         error_value = self.setpoint - arrival_rate
 
         new_prefetch_count = current_prefetch_count * self.setpoint / arrival_rate
-        new_prefetch_count = math.ceil(new_prefetch_count)
+        new_prefetch_count = round(new_prefetch_count)
  
         if new_prefetch_count < self.min_value:
             new_prefetch_count = self.min_value
